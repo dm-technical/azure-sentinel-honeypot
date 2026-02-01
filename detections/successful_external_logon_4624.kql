@@ -1,1 +1,13 @@
-
+// Successful logon from external IP (4624). Useful when you eventually get a hit.
+let timeframe = 24h;
+SecurityEvent
+| where TimeGenerated > ago(timeframe)
+| where EventID == 4624
+| extend IpAddress = tostring(parse_json(EventData).IpAddress)
+| extend TargetUserName = tostring(parse_json(EventData).TargetUserName)
+| extend LogonType = tostring(parse_json(EventData).LogonType)
+| where LogonType in ("10","3")
+| where isnotempty(IpAddress)
+| where IpAddress !in ("127.0.0.1","::1","-")
+| summarize Logons=count(), LastSeen=max(TimeGenerated) by IpAddress, TargetUserName, LogonType
+| sort by LastSeen desc
