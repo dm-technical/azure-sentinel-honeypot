@@ -1,1 +1,14 @@
-
+// Detect likely RDP brute force based on failed logons (4625)
+// Tune: threshold + time window
+let timeframe = 30m;
+let threshold = 15;
+SecurityEvent
+| where TimeGenerated > ago(timeframe)
+| where EventID == 4625
+| extend IpAddress = tostring(parse_json(EventData).IpAddress)
+| extend TargetUserName = tostring(parse_json(EventData).TargetUserName)
+| extend LogonType = tostring(parse_json(EventData).LogonType)
+| where LogonType in ("10","3")   // 10=RemoteInteractive (RDP), 3=Network
+| summarize Attempts=count(), Users=dcount(TargetUserName) by IpAddress
+| where Attempts >= threshold
+| sort by Attempts desc
