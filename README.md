@@ -1,4 +1,3 @@
-# azure-sentinel-honeypot
 
 # Azure Sentinel Windows Honeypot Lab
 
