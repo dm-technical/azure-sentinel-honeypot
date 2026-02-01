@@ -1,1 +1,23 @@
-
+// First-seen source IP generating RDP-style failed logons
+let lookback = 14d;
+let recent = 30m;
+let recentIPs =
+    SecurityEvent
+    | where TimeGenerated > ago(recent)
+    | where EventID == 4625
+    | extend IpAddress = tostring(parse_json(EventData).IpAddress)
+    | extend LogonType = tostring(parse_json(EventData).LogonType)
+    | where LogonType in ("10","3")
+    | where isnotempty(IpAddress)
+    | summarize by IpAddress;
+let historicIPs =
+    SecurityEvent
+    | where TimeGenerated between (ago(lookback) .. ago(recent))
+    | where EventID == 4625
+    | extend IpAddress = tostring(parse_json(EventData).IpAddress)
+    | extend LogonType = tostring(parse_json(EventData).LogonType)
+    | where LogonType in ("10","3")
+    | where isnotempty(IpAddress)
+    | summarize by IpAddress;
+recentIPs
+| join kind=leftanti historicIPs on IpAddress
